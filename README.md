@@ -3,7 +3,19 @@ python-idzip
 
 Seekable, gzip compatible, compression format
 
+Gzip allows to store extra fields in the gzip header. Idzip stores offsets for the efficient seeking there. 
+
+
+Acknowledgement
+===============
+
 based on https://code.google.com/p/idzip/
+
+The file format was designed by Rik Faith for dictzip. Idzip just uses multiple gzip members to have no file size limit.
+
+Idzip means Improved Dictzip. 
+
+
 
 added a Writer class
 
