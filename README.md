@@ -3,6 +3,10 @@ python-idzip
 
 Seekable, gzip compatible, compression format
 
+based on https://code.google.com/p/idzip/
+
+added a Writer class
+
 Sizing
 ==========
 downloaded
