@@ -1,0 +1,9 @@
+setup.py
+idzip/__init__.py
+idzip/caching.py
+idzip/command.py
+idzip/compressor.py
+idzip/decompressor.py
+test/test_compressor.py
+test/test_decompressor.py
+test/test_readline.py
