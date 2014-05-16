@@ -1,6 +1,6 @@
 from idzip.compressor import MAX_MEMBER_SIZE, compress_member
 from cStringIO import StringIO
-from os import SEEK_END
+from os import path, SEEK_END
 
 #get a copy of the open standard file open before overwriting
 fopen = open
@@ -16,13 +16,14 @@ def open(filename):
         return gzip.open(filename, "rb")
 
 class Writer:
-    def __init__(self, output, basename, sync_size=MAX_MEMBER_SIZE):
+    def __init__(self, output, sync_size=MAX_MEMBER_SIZE):
         if isinstance(output, basestring):
             self.output = fopen(output, "wb")
         else:
-            self.outfile = output
+            self.output = output #hopefully a file like object
+            self.output.seek(0) #throw exception now if this isnt a file like obj
         self.input_buffer = StringIO()
-        self.basename = basename
+        self.basename = path.basename(path.abspath(self.output.name))
         self.pos = 0
         self.sync_size = sync_size
         
@@ -53,6 +54,4 @@ class Writer:
     def close(self):
         self.sync() 
         return self.output.close()
-     
-    def __exit__(self):
-        return self.close()  
+

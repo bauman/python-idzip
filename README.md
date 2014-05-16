@@ -90,7 +90,7 @@ class allows streaming.
     from idzip import Writer
     
     outfile = "/home/dan/ziptest/input1.txt.dz"
-    writer = Writer(outfile, "/home/dan/ziptest/", sync_size=1048576*100)
+    writer = Writer(outfile, sync_size=1048576*100)
     infile = open("/home/dan/ziptest/input.txt", "rb")
     while True:
         data = infile.read(1048576+1)
