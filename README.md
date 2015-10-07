@@ -6,6 +6,14 @@ Seekable, gzip compatible, compression format
 Gzip allows to store extra fields in the gzip header. Idzip stores offsets for the efficient seeking there. 
 
 
+Install
+===============
+python setup.py install
+
+or 
+
+[python-idzip RHEL6 signed RPM] (http://pkgs.bauman.in/repoview/python-idzip.html)
+
 Acknowledgement
 ===============
 
@@ -84,6 +92,7 @@ Seek Timing
 
 Stream Writer 
 ===========
+
 class allows streaming.
 
 ``` python
