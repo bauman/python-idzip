@@ -15,7 +15,7 @@ def open(filename):
         logging.info("Using gzip fallback: %r", e)
         return gzip.open(filename, "rb")
 
-class Writer:
+class Writer(object):
     def __init__(self, output, sync_size=MAX_MEMBER_SIZE):
         if isinstance(output, basestring):
             self.output = fopen(output, "wb")
