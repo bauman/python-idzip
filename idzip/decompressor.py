@@ -3,7 +3,7 @@ import os
 import struct
 import zlib
 import itertools
-from cStringIO import StringIO
+from io import BytesIO
 
 from idzip import compressor, caching
 
@@ -61,7 +61,7 @@ class IdzipFile(object):
         A negative size means unlimited reading.
         """
         chunk_index, prefix_size = self._index_pos(self._pos)
-        prefixed_buffer = ""
+        prefixed_buffer = b""
         try:
             if size < 0:
                 while True:
@@ -85,7 +85,7 @@ class IdzipFile(object):
 
     def readline(self, size=-1):
         chunk_index, prefix_size = self._index_pos(self._pos)
-        line = ""
+        line = b""
         while True:
             try:
                 data = self._readchunk(chunk_index)
@@ -93,7 +93,7 @@ class IdzipFile(object):
                 break
 
             chunk_index += 1
-            eol_pos = data.find("\n", prefix_size)
+            eol_pos = data.find(b"\n", prefix_size)
             if eol_pos != -1:
                 line += data[prefix_size:eol_pos+1]
                 break
@@ -179,12 +179,12 @@ class IdzipFile(object):
 
         # The zlib stream could end with an empty block.
         deobj = zlib.decompressobj(-zlib.MAX_WBITS)
-        extra = ""
-        while deobj.unused_data == "" and not extra:
+        extra = b""
+        while deobj.unused_data == b"" and not extra:
             extra += deobj.decompress(self._fileobj.read(3))
 
         extra += deobj.flush()
-        if extra != "":
+        if extra != b"":
             raise IOError("Found extra compressed data after chunks.")
 
         self._fileobj.seek(GZIP_CRC32_LEN - len(deobj.unused_data),
@@ -263,7 +263,7 @@ def _read_gzip_header(input):
 def _read_exactly(input, size):
     data = input.read(size)
     if len(data) != size:
-        raise EOFError, "Reached EOF"
+        raise EOFError("Reached EOF")
     return data
 
 
@@ -285,7 +285,7 @@ def _split_subfields(extra_field):
     |SUB_ID |  LEN  | LEN bytes of subfield data ...|
     +---+---+---+---+===============================+
     """
-    input = StringIO(extra_field)
+    input = BytesIO(extra_field)
     sub_fields = {}
     while True:
         sub_id = input.read(2)
@@ -293,6 +293,7 @@ def _split_subfields(extra_field):
             return sub_fields
 
         data_len = _read16(input)
+        sub_id = sub_id.decode("UTF-8")
         sub_fields[sub_id] = input.read(data_len)
 
 
@@ -301,7 +302,7 @@ def _skip_cstring(input):
     """
     while True:
         c = input.read(1)
-        if not c or c == "\0":
+        if not c or c == b"\0":
             return
 
 
@@ -315,13 +316,13 @@ def _parse_dictzip_field(subfield):
     | VER=1 | CHLEN | CHCNT | CHCNT 2-byte lengths of compressed chunks ...|
     +---+---+---+---+---+---+==============================================+
     """
-    input = StringIO(subfield)
+    input = BytesIO(subfield)
     ver, chlen, chunk_count = struct.unpack("<HHH", input.read(6))
     if ver != 1:
         raise IOError("Unsupported dictzip version: %s" % ver)
 
     zlengths = []
-    for i in xrange(chunk_count):
+    for i in range(chunk_count):
         zlengths.append(_read16(input))
 
     return dict(chlen=chlen, zlengths=zlengths)

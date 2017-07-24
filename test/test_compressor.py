@@ -4,7 +4,7 @@ from __future__ import with_statement
 from nose.tools import eq_
 import struct
 import os
-from cStringIO import StringIO
+from io import BytesIO
 
 from idzip import compressor
 import asserting
@@ -47,14 +47,14 @@ def test_compress_multiple_members():
 
 
 def test_big_file():
-    header = StringIO()
+    header = BytesIO()
     in_size = compressor.MAX_MEMBER_SIZE
     compressor._prepare_header(header, in_size, None, 0)
 
     in_size = compressor.MAX_MEMBER_SIZE + 1
     try:
         compressor._prepare_header(header, in_size, None, 0)
-    except AssertionError, expected:
+    except AssertionError as expected:
         pass
     else:
         assert False, "A max member size check is missing."
@@ -67,7 +67,7 @@ def _eq_compress(basename, mtime=0):
 
 
 def _mem_compress(basename, mtime=0):
-    output = StringIO()
+    output = BytesIO()
     with open("test/data/%s" % basename, "rb") as input:
         in_size = _inputsize(input)
         compressor.compress(input, in_size, output, basename, mtime)
@@ -112,7 +112,7 @@ def _eq_zformat(expected, output, mtime=0, expected_basename=None, in_size=None)
     xlen_bytes = expected.read(2)
     asserting.eq_bytes(xlen_bytes, output.read(2))
 
-    xlen = ord(xlen_bytes[0]) & 0xff + 256 * (ord(xlen_bytes[1]) & 0xff)
+    xlen = xlen_bytes[0] & 0xff + 256 * (xlen_bytes[1] & 0xff)
     num_chunks = in_size // compressor.CHUNK_LENGTH
     if in_size % compressor.CHUNK_LENGTH:
         num_chunks += 1
@@ -125,7 +125,7 @@ def _eq_zformat(expected, output, mtime=0, expected_basename=None, in_size=None)
     # FNAME
     fname = _read_cstring(expected)
     if expected_basename is not None:
-        eq_(expected_basename, _read_cstring(output))
+        eq_(expected_basename, _read_cstring(output).decode("UTF-8"))
 
     # zstream
     _eq_zstream(expected, output)
@@ -135,10 +135,10 @@ def _eq_zformat(expected, output, mtime=0, expected_basename=None, in_size=None)
 
 
 def _read_cstring(input):
-    text = ""
+    text = b""
     while True:
         c = input.read(1)
-        if c == "\0":
+        if c == b"\0":
             return text
 
         text += c

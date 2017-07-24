@@ -25,7 +25,7 @@ MAX_MEMBER_SIZE = MAX_NUM_CHUNKS * CHUNK_LENGTH
 COMPRESSION_LEVEL = zlib.Z_BEST_COMPRESSION
 
 # Gzip header flags from RFC 1952.
-GZIP_DEFLATE_ID = "\x1f\x8b\x08"
+GZIP_DEFLATE_ID = b"\x1f\x8b\x08"
 FTEXT, FHCRC, FEXTRA, FNAME, FCOMMENT = 1, 2, 4, 8, 16
 FRESERVED = 0xff - (FTEXT|FHCRC|FEXTRA|FNAME|FCOMMENT)
 OS_CODE_UNIX = 3
@@ -38,6 +38,8 @@ def compress(input, in_size, output, basename=None, mtime=0):
     """
     while True:
         member_size = min(in_size, MAX_MEMBER_SIZE)
+        if basename is not None:
+            basename = basename.encode("UTF-8")
         _compress_member(input, member_size, output, basename, mtime)
         # Only the first member will carry the basename and mtime.
         basename = None
@@ -75,9 +77,9 @@ def _compress_data(input, in_size, output):
     2) 4 bytes of CRC.
     3) 4 bytes of file size.
     """
-    assert in_size <= 0xffffffffL
+    assert in_size <= 0xffffffff
     zlengths = []
-    crcval = zlib.crc32("")
+    crcval = zlib.crc32(b"")
     compobj = zlib.compressobj(COMPRESSION_LEVEL, zlib.DEFLATED,
             -zlib.MAX_WBITS)
 
@@ -135,22 +137,22 @@ def _prepare_header(output, in_size, basename, mtime):
     flags = FEXTRA
     if basename:
         flags |= FNAME
-    output.write(chr(flags))
+    output.write(bytes([flags]))
 
     # The mtime will be undefined if it does not fit.
-    if mtime > 0xffffffffL:
+    if mtime > 0xffffffff:
         mtime = 0
     _write32(output, mtime)
 
-    deflate_flags = "\0"
+    deflate_flags = b"\0"
     if COMPRESSION_LEVEL == zlib.Z_BEST_COMPRESSION:
-        deflate_flags = "\x02"  # slowest compression algorithm
+        deflate_flags = b"\x02"  # slowest compression algorithm
     output.write(deflate_flags)
-    output.write(chr(OS_CODE_UNIX))
+    output.write(bytes([OS_CODE_UNIX]))
 
     zlengths_pos = _write_extra_field(output, in_size)
     if basename:
-        output.write(basename + '\0')  # original basename
+        output.write(basename + b'\0')  # original basename
 
     return zlengths_pos
 
@@ -199,13 +201,13 @@ def _write_extra_field(output, in_size):
     _write16(output, extra_length)  # XLEN
 
     # Dictzip extra field (Random Access)
-    output.write("RA")
+    output.write(b"RA")
     _write16(output, field_length)
     _write16(output, 1)  # version
     _write16(output, CHUNK_LENGTH)
     _write16(output, num_chunks)
     zlengths_pos = output.tell()
-    output.write("\0\0" * num_chunks)
+    output.write(b"\0\0" * num_chunks)
     return zlengths_pos
 
 
@@ -217,7 +219,7 @@ def _write16(output, value):
 def _write32(output, value):
     """Writes only the lowest 4 bytes from the given number.
     """
-    output.write(struct.pack("<I", value & 0xffffffffL))
+    output.write(struct.pack("<I", value & 0xffffffff))
 
 
 
