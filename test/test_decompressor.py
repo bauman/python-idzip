@@ -32,7 +32,7 @@ def test_parse_dictzip_field():
     try:
         decompressor._parse_dictzip_field(field)
         assert False
-    except IOError, expected:
+    except IOError as expected:
         pass
 
 
@@ -51,14 +51,14 @@ def test_decompress_empty():
 
 def test_begining_read():
     for reader in create_data_readers():
-        for i in xrange(100):
+        for i in range(100):
             data = reader.read(1234)
 
-        for i in xrange(100):
+        for i in range(100):
             reader.read(1)
 
         reader.seek(0)
-        for i in xrange(2):
+        for i in range(2):
             reader.read(100000)
 
 
@@ -66,14 +66,14 @@ def test_end_read():
     buflen = 1234
     for reader in create_data_readers():
         filesize = reader.filesize()
-        for i in xrange(100):
+        for i in range(100):
             reader.seek(max(0, filesize - i * buflen))
             reader.read(buflen)
 
 
 def test_seek_cur():
     for reader in create_data_readers():
-        for i in xrange(100):
+        for i in range(100):
             data = reader.read(1234)
             reader.seek(i, os.SEEK_CUR)
 
@@ -83,7 +83,7 @@ def test_eof():
     for reader in create_data_readers():
         filesize = reader.filesize()
         reader.seek(filesize)
-        eq_("", reader.read(1))
+        eq_(b"", reader.read(1))
 
         if filesize > 0:
             reader.seek(filesize - 1)
@@ -102,7 +102,7 @@ def create_data_readers():
         ]
     readers = []
     for filename in filenames:
-        expected_input = open("test/data/%s" % filename)
+        expected_input = open("test/data/%s" % filename, "rb")
         input = decompressor.IdzipFile("test/data/%s.dz" % filename)
         readers.append(EqReader(expected_input, input))
 

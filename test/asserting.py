@@ -2,7 +2,7 @@
 from nose.tools import eq_
 
 def eq_files(expected_input, got_input):
-    if isinstance(expected_input, basestring):
+    if isinstance(expected_input, str):
         expected_input = open(expected_input, "rb")
     expected = expected_input.read()
     expected_input.close()
