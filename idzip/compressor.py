@@ -137,7 +137,7 @@ def _prepare_header(output, in_size, basename, mtime):
     flags = FEXTRA
     if basename:
         flags |= FNAME
-    output.write(bytes([flags]))
+    output.write(bytearray([flags]))
 
     # The mtime will be undefined if it does not fit.
     if mtime > 0xffffffff:
@@ -148,7 +148,7 @@ def _prepare_header(output, in_size, basename, mtime):
     if COMPRESSION_LEVEL == zlib.Z_BEST_COMPRESSION:
         deflate_flags = b"\x02"  # slowest compression algorithm
     output.write(deflate_flags)
-    output.write(bytes([OS_CODE_UNIX]))
+    output.write(bytearray([OS_CODE_UNIX]))
 
     zlengths_pos = _write_extra_field(output, in_size)
     if basename:
