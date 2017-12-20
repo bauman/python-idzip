@@ -13,8 +13,8 @@ http://code.google.com/p/idzip/
 import zlib
 import struct
 
-from io import BytesIO
-from os import path, SEEK_END
+from io import BytesIO, UnsupportedOperation
+from os import path, SEEK_END, SEEK_SET
 
 # The chunk length used by dictzip.
 CHUNK_LENGTH = 58315
@@ -229,14 +229,19 @@ def _write32(output, value):
     output.write(struct.pack("<I", value & 0xffffffff))
 
 
-class IdZipWriter(object):
+class IdzipWriter(object):
+    FILE_EXTENSION = 'dz'
+    enforce_extension = True
+
     def __init__(self, output, sync_size=MAX_MEMBER_SIZE, mtime=0):
 
         if isinstance(output, basestring):
-            self.output = open(output, "wb")
+            self.output = self._prepare_file_stream(output)
+            self._should_close = True
         else:
             self.output = output  # hopefully a file like object
             self.output.seek(0)  # throw exception now if this isnt a file like obj
+            self._should_close = False
         self.input_buffer = BytesIO()
         try:
             name = path.abspath(self.output.name)
@@ -248,10 +253,29 @@ class IdZipWriter(object):
         self.pos = 0
         self.sync_size = sync_size
         self.mtime = mtime
-        self.compressobj = zlib.compressobj(
+        self.compressobj = None
+        self._reset_compressor()
+        self.version = 1
+
+    def _prepare_file_stream(self, path):
+        if self.enforce_extension and not path.endswith(self.FILE_EXTENSION):
+            path = "%s.%s" % (path, self.FILE_EXTENSION)
+        return open(path, 'wb')
+
+    @property
+    def stream(self):
+        return self.output
+
+    def _make_compressor(self):
+        return zlib.compressobj(
             COMPRESSION_LEVEL, zlib.DEFLATED,
             -zlib.MAX_WBITS)
-        self.version = 1
+
+    def _reset_compressor(self):
+        self.compressobj = self._make_compressor()
+
+    def seek(self, offset, whence=SEEK_SET):
+        raise UnsupportedOperation("Cannot seek on a write-only stream")
 
     def write(self, b):
         start_pos = self.pos
@@ -280,7 +304,12 @@ class IdZipWriter(object):
 
     def close(self):
         self.sync()
-        return self.output.close()
+        if self._should_close:
+            return self.output.close()
+        return None
+
+    def fileno(self):
+        return self.stream.fileno()
 
     def compress_member(self):
         """A gzip member contains:
@@ -424,6 +453,7 @@ class IdZipWriter(object):
 
         # An empty block with BFINAL=1 flag ends the zlib data stream.
         self.output.write(self.compressobj.flush(zlib.Z_FINISH))
+        self._reset_compressor()
         _write32(self.output, crcval)
         _write32(self.output, in_size)
         return zlengths

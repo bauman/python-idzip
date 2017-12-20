@@ -10,10 +10,22 @@ from idzip import compressor, caching
 GZIP_CRC32_LEN = 4
 
 
-class IdzipFile(object):
-    def __init__(self, filename):
-        self.name = filename
-        self._fileobj = open(filename, "rb")
+class IdzipReader(object):
+    def __init__(self, filename=None, fileobj=None):
+        if filename is None:
+            if fileobj:
+                self._fileobj = fileobj
+                self._should_close = False
+                try:
+                    self.name = fileobj.name
+                except AttributeError:
+                    self.name = ''
+            else:
+                raise ValueError("Must provide a filename or a fileobj argument")
+        else:
+            self.name = filename
+            self._should_close = True
+            self._fileobj = open(filename, "rb")
         # The current position in the decompressed data.
         self._pos = 0
         self._members = []
@@ -23,6 +35,10 @@ class IdzipFile(object):
 
         self._read_member_header()
 
+    @property
+    def stream(self):
+        return self.output
+
     def _read_member_header(self):
         """Extends self._members and self._chunks
         by the read header data.
@@ -30,6 +46,8 @@ class IdzipFile(object):
         header = _read_gzip_header(self._fileobj)
         offset = self._fileobj.tell()
         if "RA" not in header["extra_field"]:
+            if self._fileobj.seekable():
+                self.stream.seek(0)
             raise IOError("Not an idzip file: %r" % self.name)
 
         dictzip_field = _parse_dictzip_field(header["extra_field"]["RA"])
@@ -109,8 +127,12 @@ class IdzipFile(object):
         return line
 
     def close(self):
-        self._fileobj.close()
+        if self._should_close:
+            self._fileobj.close()
         self._cache = None
+
+    def fileno(self):
+        return self.stream.fileno()
 
     def _index_pos(self, pos):
         """Returns (chunk_index, remainder) index
@@ -327,3 +349,5 @@ def _parse_dictzip_field(subfield):
 
     return dict(chlen=chlen, zlengths=zlengths)
 
+
+IdzipFile = IdzipReader
