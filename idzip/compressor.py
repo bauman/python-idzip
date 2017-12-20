@@ -16,6 +16,8 @@ import struct
 from io import BytesIO, UnsupportedOperation
 from os import path, SEEK_END, SEEK_SET
 
+from ._stream import _CompressedStreamWrapperMixin
+
 # The chunk length used by dictzip.
 CHUNK_LENGTH = 58315
 
@@ -229,7 +231,7 @@ def _write32(output, value):
     output.write(struct.pack("<I", value & 0xffffffff))
 
 
-class IdzipWriter(object):
+class IdzipWriter(_CompressedStreamWrapperMixin):
     FILE_EXTENSION = 'dz'
     enforce_extension = True
 

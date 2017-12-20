@@ -3,14 +3,15 @@ import os
 import struct
 import zlib
 import itertools
-from io import BytesIO
+from io import BytesIO, open
 
 from idzip import compressor, caching
+from idzip._stream import _CompressedStreamWrapperMixin
 
 GZIP_CRC32_LEN = 4
 
 
-class IdzipReader(object):
+class IdzipReader(_CompressedStreamWrapperMixin):
     def __init__(self, filename=None, fileobj=None):
         if filename is None:
             if fileobj:
@@ -37,7 +38,7 @@ class IdzipReader(object):
 
     @property
     def stream(self):
-        return self.output
+        return self._fileobj
 
     def _read_member_header(self):
         """Extends self._members and self._chunks
