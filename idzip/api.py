@@ -1,5 +1,4 @@
 import io
-import os
 import errno
 
 from idzip.compressor import IdzipWriter, MAX_MEMBER_SIZE
@@ -8,19 +7,19 @@ from gzip import GzipFile
 
 
 def open(filename, mode='rb', sync_size=MAX_MEMBER_SIZE):
-    return IdZipFile(filename, mode, sync_size=MAX_MEMBER_SIZE)
+    return IdzipFile(filename, mode, sync_size=MAX_MEMBER_SIZE)
 
 
 def compress(data, sync_size=MAX_MEMBER_SIZE):
     out = io.BytesIO()
-    writer = IdZipFile(mode='w', fileobj=out, sync_size=sync_size)
+    writer = IdzipFile(mode='w', fileobj=out, sync_size=sync_size)
     writer.write(data)
     return out.getvalue()
 
 
 def decompress(data):
     in_ = io.BytesIO(data)
-    return IdZipFile(fileobj=in_).read()
+    return IdzipFile(fileobj=in_).read()
 
 
 class IdzipFile(object):
@@ -51,7 +50,7 @@ class IdzipFile(object):
         return GzipFile(filename, mode=mode, fileobj=fileobj)
 
     def _make_writer(self, filespec, sync_size):
-        return IdZipWriter(filespec, sync_size=sync_size)
+        return IdzipWriter(filespec, sync_size=sync_size)
 
     @property
     def name(self):
@@ -76,26 +75,27 @@ class IdzipFile(object):
     def _check_can_read(self):
         if "r" not in self.mode:
             raise OSError(errno.EBADF, "Cannot read from a write-only file")
-        if self.closed():
+        if self.closed:
             raise OSError(errno.EBADF, "Cannot read from a closed file")
 
     def _check_can_write(self):
         if not (set("wax") & set(self.mode)):
             raise OSError(errno.EBADF, "Cannot write to a read-only file")
-        if self.closed():
+        if self.closed:
             raise OSError(errno.EBADF, "Cannot write to a closed file")
 
     def readable(self):
-        return self._impl.stream.readable()
+        return self._impl.readable()
 
     def writable(self):
-        return self._impl.stream.writable()
+        return self._impl.writable()
 
+    @property
     def closed(self):
-        return self._impl.stream.closed()
+        return self._impl.closed
 
     def seekable(self):
-        return self._impl.stream.seekable()
+        return self._impl.seekable()
 
     def seek(self, offset, whence=io.SEEK_SET):
         return self._impl.seek(offset, whence)
