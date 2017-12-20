@@ -1,7 +1,7 @@
 from idzip.compressor import MAX_MEMBER_SIZE, compress_member
 from idzip.api import (
-    IdZipFile, compress, decompress, open as dzopen,
-    IdZipWriter as Writer)
+    IdzipFile, compress, decompress, open as dzopen,
+    IdzipWriter as Writer)
 
 # get a copy of the open standard file open before overwriting
 fopen = open
@@ -10,6 +10,6 @@ open = dzopen
 
 __all__ = [
     "MAX_MEMBER_SIZE", "compress_member",
-    "IdZipFile", "compress", "decompress",
+    "IdzipFile", "compress", "decompress",
     "Writer", "open"
 ]
