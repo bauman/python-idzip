@@ -12,11 +12,18 @@ http://code.google.com/p/idzip/
 
 import zlib
 import struct
+import time
 
 from io import BytesIO, UnsupportedOperation
 from os import path, SEEK_END, SEEK_SET
 
-from ._stream import _CompressedStreamWrapperMixin
+from ._stream import IOStreamWrapperMixin
+
+try:
+    basestring
+except NameError:
+    basestring = (bytes, str)
+
 
 # The chunk length used by dictzip.
 CHUNK_LENGTH = 58315
@@ -36,11 +43,13 @@ FRESERVED = 0xff - (FTEXT | FHCRC | FEXTRA | FNAME | FCOMMENT)
 OS_CODE_UNIX = 3
 
 
-def compress(input, in_size, output, basename=None, mtime=0):
+def compress(input, in_size, output, basename=None, mtime=None):
     """Produces a valid gzip output for the given input.
     A gzip file consists of one or many members.
     Each member would be a valid gzip file.
     """
+    if mtime is None:
+        mtime = time.time()
     while True:
         member_size = min(in_size, MAX_MEMBER_SIZE)
         if basename is not None:
@@ -231,12 +240,13 @@ def _write32(output, value):
     output.write(struct.pack("<I", value & 0xffffffff))
 
 
-class IdzipWriter(_CompressedStreamWrapperMixin):
+class IdzipWriter(IOStreamWrapperMixin):
     FILE_EXTENSION = 'dz'
     enforce_extension = True
 
-    def __init__(self, output, sync_size=MAX_MEMBER_SIZE, mtime=0):
-
+    def __init__(self, output, sync_size=MAX_MEMBER_SIZE, mtime=None):
+        if mtime is None:
+            mtime = time.time()
         if isinstance(output, basestring):
             self.output = self._prepare_file_stream(output)
             self._should_close = True
@@ -249,12 +259,12 @@ class IdzipWriter(_CompressedStreamWrapperMixin):
             name = path.abspath(self.output.name)
             basename = path.basename(name)
             self.name = name
-            self.basename = basename
+            self.basename = basename.decode("UTF-8")
         except AttributeError:
             self.name = self.basename = ""
         self.pos = 0
         self.sync_size = sync_size
-        self.mtime = mtime
+        self.mtime = int(mtime)
         self.compressobj = None
         self._reset_compressor()
         self.version = 1
@@ -280,7 +290,6 @@ class IdzipWriter(_CompressedStreamWrapperMixin):
         raise UnsupportedOperation("Cannot seek on a write-only stream")
 
     def write(self, b):
-        start_pos = self.pos
         self.input_buffer.write(b)
         self.pos += len(b)
         curpos = self.input_buffer.tell()
@@ -290,7 +299,7 @@ class IdzipWriter(_CompressedStreamWrapperMixin):
         if buffer_len > self.sync_size:
             self.sync()
             self.input_buffer = BytesIO()
-        return start_pos, len(b)
+        return len(b)
 
     def sync(self):
         self.compress_member()
@@ -307,7 +316,8 @@ class IdzipWriter(_CompressedStreamWrapperMixin):
     def close(self):
         self.sync()
         if self._should_close:
-            return self.output.close()
+            closing = self.output.close()
+            return closing
         return None
 
     def fileno(self):

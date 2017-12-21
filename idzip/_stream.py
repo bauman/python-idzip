@@ -1,6 +1,6 @@
 
 
-class _CompressedStreamWrapperMixin(object):
+class IOStreamWrapperMixin(object):
 
     @property
     def closed(self):
@@ -14,3 +14,7 @@ class _CompressedStreamWrapperMixin(object):
 
     def writable(self):
         return self.stream.writable()
+
+    def __del__(self):
+        if not self.closed:
+            self.close()

@@ -23,7 +23,7 @@ def decompress(data):
 
 
 class IdzipFile(object):
-    def __init__(self, filename=None, mode="rb", fileobj=None, sync_size=MAX_MEMBER_SIZE):
+    def __init__(self, filename=None, mode="rb", fileobj=None, sync_size=MAX_MEMBER_SIZE, mtime=None):
         self._impl = None
         if 'b' not in mode:
             mode += 'b'
@@ -36,9 +36,9 @@ class IdzipFile(object):
             if filename is None:
                 if fileobj is None:
                     raise ValueError("Must provide a filename or a fileobj argument")
-                self._impl = self._make_writer(fileobj, sync_size=sync_size)
+                self._impl = self._make_writer(fileobj, sync_size=sync_size, mtime=mtime)
             else:
-                self._impl = self._make_writer(filename, sync_size=sync_size)
+                self._impl = self._make_writer(filename, sync_size=sync_size, mtime=mtime)
         else:
             raise IOError("Unsupported mode %r" % mode)
         self.mode = mode
@@ -49,8 +49,8 @@ class IdzipFile(object):
     def _fallback_to_gzip(self, filename, mode, fileobj):
         return GzipFile(filename, mode=mode, fileobj=fileobj)
 
-    def _make_writer(self, filespec, sync_size):
-        return IdzipWriter(filespec, sync_size=sync_size)
+    def _make_writer(self, filespec, sync_size, mtime):
+        return IdzipWriter(filespec, sync_size=sync_size, mtime=mtime)
 
     @property
     def name(self):

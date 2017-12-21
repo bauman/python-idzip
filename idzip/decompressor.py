@@ -6,12 +6,12 @@ import itertools
 from io import BytesIO, open
 
 from idzip import compressor, caching
-from idzip._stream import _CompressedStreamWrapperMixin
+from idzip._stream import IOStreamWrapperMixin
 
 GZIP_CRC32_LEN = 4
 
 
-class IdzipReader(_CompressedStreamWrapperMixin):
+class IdzipReader(IOStreamWrapperMixin):
     def __init__(self, filename=None, fileobj=None):
         if filename is None:
             if fileobj:
@@ -47,8 +47,11 @@ class IdzipReader(_CompressedStreamWrapperMixin):
         header = _read_gzip_header(self._fileobj)
         offset = self._fileobj.tell()
         if "RA" not in header["extra_field"]:
-            if self._fileobj.seekable():
-                self.stream.seek(0)
+            try:
+                if self._fileobj.seekable():
+                    self.stream.seek(0)
+            except AttributeError:
+                pass
             raise IOError("Not an idzip file: %r" % self.name)
 
         dictzip_field = _parse_dictzip_field(header["extra_field"]["RA"])
@@ -233,7 +236,10 @@ class IdzipReader(_CompressedStreamWrapperMixin):
         self._pos = new_pos
 
     def __repr__(self):
-        return "<idzip open file %r at %s>" % (self.name, hex(id(self)))
+        return "<idzip %s file %r at %s>" % (
+            "open" if not self.closed else "closed",
+            self.name,
+            hex(id(self)))
 
 
 class _Member(object):
