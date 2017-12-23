@@ -113,3 +113,9 @@ class IdzipFile(object):
         while line:
             yield line
             line = self.readline()
+
+    def __repr__(self):
+        return "<idzip %s file %r at %s>" % (
+            "open" if not self.closed else "closed",
+            self.name,
+            hex(id(self)))
