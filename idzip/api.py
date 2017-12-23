@@ -63,13 +63,11 @@ class IdzipFile(object):
         return self._impl.flush()
 
     def write(self, b):
-        if "r" in self.mode:
-            raise OSError(errno.EBADF, "Cannot write to a read-only file")
+        self._check_can_write()
         self._impl.write(b)
 
     def read(self, size=-1):
-        if "r" not in self.mode:
-            raise OSError(errno.EBADF, "Cannot read from a write-only file")
+        self._check_can_read()
         return self._impl.read(size)
 
     def _check_can_read(self):
