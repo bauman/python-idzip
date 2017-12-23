@@ -135,9 +135,6 @@ class IdzipReader(IOStreamWrapperMixin):
             self._fileobj.close()
         self._cache = None
 
-    def fileno(self):
-        return self.stream.fileno()
-
     def _index_pos(self, pos):
         """Returns (chunk_index, remainder) index
         for the given position in uncompressed data.
