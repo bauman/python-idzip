@@ -10,6 +10,7 @@ Project description:
 http://code.google.com/p/idzip/
 """
 
+import sys
 import zlib
 import struct
 import time
@@ -17,13 +18,19 @@ import time
 from io import BytesIO, UnsupportedOperation
 from os import path, SEEK_END, SEEK_SET
 
-from ._stream import IOStreamWrapperMixin
+from ._stream import IOStreamWrapperMixin, check_file_like_for_writing
 
 try:
     basestring
 except NameError:
     basestring = (bytes, str)
 
+
+fsencoding = 'UTF-8'
+try:
+    fsencoding = sys.getfilesystemencoding()
+except AttributeError:
+    pass
 
 # The chunk length used by dictzip.
 CHUNK_LENGTH = 58315
@@ -53,7 +60,7 @@ def compress(input, in_size, output, basename=None, mtime=None):
     while True:
         member_size = min(in_size, MAX_MEMBER_SIZE)
         if basename is not None:
-            basename = basename.encode("UTF-8")
+            basename = basename.encode(fsencoding)
         _compress_member(input, member_size, output, basename, mtime)
         # Only the first member will carry the basename and mtime.
         basename = None
@@ -251,18 +258,23 @@ class IdzipWriter(IOStreamWrapperMixin):
             self.output = self._prepare_file_stream(output)
             self._should_close = True
         else:
-            self.output = output  # hopefully a file like object
-            self.output.seek(0)  # throw exception now if this isnt a file like obj
+            # hopefully a file like object
+            if not check_file_like_for_writing(output):
+                raise TypeError(
+                    "`output` must be a file-like object supporting "
+                    "write, tell, flush, and close!")
+            self.output = output
             self._should_close = False
         self.input_buffer = BytesIO()
         try:
             name = path.abspath(self.output.name)
             basename = path.basename(name)
             self.name = name
-            self.basename = basename.decode("UTF-8")
+            self.basename = basename.decode(fsencoding)
         except AttributeError:
-            self.name = self.basename = ""
-        self.pos = 0
+            self.name = ""
+            self.basename = self.name.decode(fsencoding)
+        self.uncompressed_position = 0
         self.sync_size = sync_size
         self.mtime = int(mtime)
         self.compressobj = None
@@ -289,25 +301,48 @@ class IdzipWriter(IOStreamWrapperMixin):
     def seek(self, offset, whence=SEEK_SET):
         raise UnsupportedOperation("Cannot seek on a write-only stream")
 
-    def write(self, b):
-        self.input_buffer.write(b)
-        self.pos += len(b)
+    def reset_buffer(self):
+        # For truncate() to actually help us circumvent memory problems,
+        # we need to seek to the beginning of the buffer, otherwise the
+        # next call to write() will just pad the buffer with null bytes
+        # up to the current position returned by tell()
+        self.input_buffer.seek(0)
+        self.input_buffer.truncate(0)
+
+    def _get_buffer_size(self):
         curpos = self.input_buffer.tell()
         self.input_buffer.seek(0, SEEK_END)
         buffer_len = self.input_buffer.tell()
         self.input_buffer.seek(curpos)
+        return buffer_len
+
+    def write(self, b):
+        try:
+            self.input_buffer.write(b)
+        except MemoryError:
+            # Attempting to write to the input buffer may cause
+            # it to optimistically request a contiguous allocation
+            # larger than the memory allocator can currently supply,
+            # raising a MemoryError. This can be recovered from by
+            # syncing the current buffer to disk, resetting the
+            # input buffer, and trying to write again
+            self.sync()
+            self.reset_buffer()
+            self.input_buffer.write(b)
+        self.uncompressed_position += len(b)
+        buffer_len = self._get_buffer_size()
         if buffer_len > self.sync_size:
             self.sync()
-            self.input_buffer = BytesIO()
+            self.reset_buffer()
         return len(b)
 
     def sync(self):
         self.compress_member()
-        self.input_buffer.truncate(0)
+        self.reset_buffer()
         return self.output.tell()
 
     def tell(self):
-        return self.pos
+        return self.uncompressed_position
 
     def flush(self):
         self.sync()
@@ -315,13 +350,11 @@ class IdzipWriter(IOStreamWrapperMixin):
 
     def close(self):
         self.sync()
+        self.reset_buffer()
         if self._should_close:
             closing = self.output.close()
             return closing
         return None
-
-    def fileno(self):
-        return self.stream.fileno()
 
     def compress_member(self):
         """A gzip member contains:
