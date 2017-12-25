@@ -40,6 +40,8 @@ CHUNK_LENGTH = 58315
 MAX_NUM_CHUNKS = (0xffff - 10) // 2
 MAX_MEMBER_SIZE = MAX_NUM_CHUNKS * CHUNK_LENGTH
 
+WRITE_BLOCK_SIZE = MAX_MEMBER_SIZE // (2 ** 5)
+
 # Slow compression is OK.
 COMPRESSION_LEVEL = zlib.Z_BEST_COMPRESSION
 
@@ -270,10 +272,10 @@ class IdzipWriter(IOStreamWrapperMixin):
             name = path.abspath(self.output.name)
             basename = path.basename(name)
             self.name = name
-            self.basename = basename.decode(fsencoding)
+            self.basename = basename.encode(fsencoding)
         except AttributeError:
             self.name = ""
-            self.basename = self.name.decode(fsencoding)
+            self.basename = self.name.encode(fsencoding)
         self.uncompressed_position = 0
         self.sync_size = sync_size
         self.mtime = int(mtime)
@@ -316,6 +318,21 @@ class IdzipWriter(IOStreamWrapperMixin):
         self.input_buffer.seek(curpos)
         return buffer_len
 
+    def _write_chunked(self, b, chunk_size=WRITE_BLOCK_SIZE):
+        offset = 0
+        total = len(b)
+        i = 0
+        while offset < total:
+            s = b[offset:offset + chunk_size]
+            self.input_buffer.write(s)
+            self.uncompressed_position += len(s)
+            i += 1
+            offset += chunk_size
+            if i % 2 == 0:
+                self.sync()
+                self.reset_buffer()
+        return total
+
     def write(self, b):
         try:
             self.input_buffer.write(b)
@@ -328,7 +345,14 @@ class IdzipWriter(IOStreamWrapperMixin):
             # input buffer, and trying to write again
             self.sync()
             self.reset_buffer()
-            self.input_buffer.write(b)
+            try:
+                self.input_buffer.write(b)
+            except MemoryError:
+                # If the data to be written are so large that
+                # they cannot be written to the input buffer in
+                # one shot, try writing it in chunks. If *this*
+                # runs out of memory, we're out of options.
+                return self._write_chunked(b)
         self.uncompressed_position += len(b)
         buffer_len = self._get_buffer_size()
         if buffer_len > self.sync_size:

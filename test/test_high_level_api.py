@@ -53,5 +53,31 @@ def test_idzip_file_api():
     os.remove(gzfile)
 
 
+def test_large_write():
+
+    # find the largest fraction of MAX_MEMBER_SIZE that can
+    # be allocated
+    data = b''
+    for d in range(1, 1000):
+        try:
+            data = b"a" * (api.MAX_MEMBER_SIZE // d)
+            break
+        except MemoryError:
+            continue
+    if data == b'':
+        # no test could be performed
+        return
+
+    dfd, dzfile = tempfile.mkstemp(suffix='.dz')
+    with IdzipFile(dzfile, 'wb') as writer:
+        writer.write(data)
+
+    assert writer.closed
+
+    os.close(dfd)
+    os.remove(dzfile)
+
+
 if __name__ == '__main__':
     test_idzip_file_api()
+    test_large_write()
