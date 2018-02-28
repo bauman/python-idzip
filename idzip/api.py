@@ -70,6 +70,9 @@ class IdzipFile(object):
         self._check_can_read()
         return self._impl.read(size)
 
+    def tell(self):
+        return self._impl.tell()
+
     def _check_can_read(self):
         if "r" not in self.mode:
             raise OSError(errno.EBADF, "Cannot read from a write-only file")
