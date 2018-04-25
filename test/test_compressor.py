@@ -109,7 +109,7 @@ def _eq_zformat(expected, output, mtime=0, expected_basename=None, in_size=None)
 
     # FEXTRA header
     info_len = 10
-    xlen_bytes = expected.read(2)
+    xlen_bytes = bytearray(expected.read(2))
     asserting.eq_bytes(xlen_bytes, output.read(2))
 
     xlen = xlen_bytes[0] & 0xff + 256 * (xlen_bytes[1] & 0xff)
@@ -159,4 +159,3 @@ def _eq_zstream(expected, produced):
     got = deobj.decompress(produced.read())
     produced.seek(-len(deobj.unused_data), os.SEEK_CUR)
     asserting.eq_bytes(expected_data, got)
-

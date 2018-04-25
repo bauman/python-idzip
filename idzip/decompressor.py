@@ -3,17 +3,30 @@ import os
 import struct
 import zlib
 import itertools
-from io import BytesIO
+from io import BytesIO, open
 
 from idzip import compressor, caching
+from idzip._stream import IOStreamWrapperMixin
 
 GZIP_CRC32_LEN = 4
 
 
-class IdzipFile(object):
-    def __init__(self, filename):
-        self.name = filename
-        self._fileobj = open(filename, "rb")
+class IdzipReader(IOStreamWrapperMixin):
+    def __init__(self, filename=None, fileobj=None):
+        if filename is None:
+            if fileobj:
+                self._fileobj = fileobj
+                self._should_close = False
+                try:
+                    self.name = fileobj.name
+                except AttributeError:
+                    self.name = ''
+            else:
+                raise ValueError("Must provide a filename or a fileobj argument")
+        else:
+            self.name = filename
+            self._should_close = True
+            self._fileobj = open(filename, "rb")
         # The current position in the decompressed data.
         self._pos = 0
         self._members = []
@@ -23,6 +36,10 @@ class IdzipFile(object):
 
         self._read_member_header()
 
+    @property
+    def stream(self):
+        return self._fileobj
+
     def _read_member_header(self):
         """Extends self._members and self._chunks
         by the read header data.
@@ -30,6 +47,11 @@ class IdzipFile(object):
         header = _read_gzip_header(self._fileobj)
         offset = self._fileobj.tell()
         if "RA" not in header["extra_field"]:
+            try:
+                if self._fileobj.seekable():
+                    self.stream.seek(0)
+            except AttributeError:
+                pass
             raise IOError("Not an idzip file: %r" % self.name)
 
         dictzip_field = _parse_dictzip_field(header["extra_field"]["RA"])
@@ -109,7 +131,8 @@ class IdzipFile(object):
         return line
 
     def close(self):
-        self._fileobj.close()
+        if self._should_close:
+            self._fileobj.close()
         self._cache = None
 
     def _index_pos(self, pos):
@@ -210,7 +233,10 @@ class IdzipFile(object):
         self._pos = new_pos
 
     def __repr__(self):
-        return "<idzip open file %r at %s>" % (self.name, hex(id(self)))
+        return "<idzip %s file %r at %s>" % (
+            "open" if not self.closed else "closed",
+            self.name,
+            hex(id(self)))
 
 
 class _Member(object):
@@ -327,3 +353,5 @@ def _parse_dictzip_field(subfield):
 
     return dict(chlen=chlen, zlengths=zlengths)
 
+
+IdzipFile = IdzipReader
