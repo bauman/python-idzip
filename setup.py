@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from setuptools import setup, find_packages
 
-VERSION = "0.3"
+VERSION = "0.3.1"
 
 setup(
     name = "python-idzip",
@@ -13,7 +13,7 @@ setup(
     maintainer_email='dan@bauman.space',
     license='MIT',
     url = 'https://github.com/bauman/python-idzip',
-    download_url = 'https://github.com/bauman/python-idzip/%s.tar.gz' %(VERSION),
+    download_url = 'https://github.com/bauman/python-idzip/archive/%s.tar.gz' %(VERSION),
     classifiers = [
                        'License :: OSI Approved :: MIT License',
                        'Operating System :: OS Independent',
