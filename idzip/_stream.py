@@ -26,5 +26,5 @@ class IOStreamWrapperMixin(object):
 def check_file_like_for_writing(f):
     check = (
         hasattr(f, "write") and hasattr(f, "tell") and
-        hasattr(f, 'flush') and hasattr(f, 'close)'))
+        hasattr(f, 'flush') and hasattr(f, 'close'))
     return check
