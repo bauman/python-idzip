@@ -83,24 +83,24 @@ class IdzipReader(IOStreamWrapperMixin):
         A negative size means unlimited reading.
         """
         chunk_index, prefix_size = self._index_pos(self._pos)
-        prefixed_buffer = b""
+        prefixed_buffer = []
         try:
             if size < 0:
                 while True:
-                    prefixed_buffer += self._readchunk(chunk_index)
+                    prefixed_buffer.append(self._readchunk(chunk_index))
                     chunk_index += 1
             else:
                 need = prefix_size + size
                 while need > 0:
                     chunk_data = self._readchunk(chunk_index)
-                    prefixed_buffer += chunk_data[:need]
+                    prefixed_buffer.append(chunk_data[:need])
                     need -= len(chunk_data)
                     chunk_index += 1
 
         except EOFError:
             # The read data will be returned.
             pass
-
+        prefixed_buffer = b"".join(prefixed_buffer)
         result = prefixed_buffer[prefix_size:]
         self._pos += len(result)
         return result
