@@ -2,6 +2,7 @@ import random
 import string
 import gzip
 import os
+import io
 import tempfile
 
 from idzip import api
@@ -60,22 +61,20 @@ def test_large_write():
     data = b''
     for d in range(1, 1000):
         try:
-            data = b"a" * (api.MAX_MEMBER_SIZE // d)
+            data = b"a" * ((api.MAX_MEMBER_SIZE + 100) // d)
             break
         except MemoryError:
             continue
     if data == b'':
         # no test could be performed
         return
-
-    dfd, dzfile = tempfile.mkstemp(suffix='.dz')
-    with IdzipFile(dzfile, 'wb') as writer:
+    dzfile = io.BytesIO()
+    with IdzipFile(fileobj=dzfile, mode='wb') as writer:
         writer.write(data)
-
-    assert writer.closed
-
-    os.close(dfd)
-    os.remove(dzfile)
+    dzfile.seek(0)
+    with IdzipFile(fileobj=dzfile, mode='rb') as reader:
+        decoded = reader.read()
+    assert decoded == data
 
 
 if __name__ == '__main__':

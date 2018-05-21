@@ -355,15 +355,50 @@ class IdzipWriter(IOStreamWrapperMixin):
                 return self._write_chunked(b)
         self.uncompressed_position += len(b)
         buffer_len = self._get_buffer_size()
-        if buffer_len > self.sync_size:
-            self.sync()
-            self.reset_buffer()
+        if buffer_len >= self.sync_size:
+            if self._check_member_size_valid(buffer_len):
+                self.sync()
+                self.reset_buffer()
+            else:
+                self._sync_chunked()
         return len(b)
 
     def sync(self):
         self.compress_member()
         self.reset_buffer()
         return self.output.tell()
+
+    def _sync_chunked(self, flush=False):
+        # accumulate chunks of the input buffer which are at most
+        # `MAX_MEMBER_SIZE` bytes long
+        valid_members = []
+        self.input_buffer.seek(0)
+        chunk = self.input_buffer.read(MAX_MEMBER_SIZE - 1)
+        while chunk:
+            valid_members.append(BytesIO(chunk))
+            chunk = self.input_buffer.read(MAX_MEMBER_SIZE - 1)
+        # if the input buffer was empty, then no valid members were
+        # made so return immediately
+        if not valid_members:
+            return
+        # if there is only one member, chunked syncing should be the same
+        # as normal syncing, leaving the input buffer empty
+        elif len(valid_members) == 1:
+            self.input_buffer = valid_members[0]
+            self.compress_member()
+            self.reset_buffer()
+        else:
+            # otherwise, for all but the last valid member, sync those buffers
+            # to the output stream, and then set the last valid member as the current
+            # input buffer to avoid having a tiny leftover fragment.
+            for chunk in valid_members[:-1]:
+                self.input_buffer = chunk
+                self.compress_member()
+                self.reset_buffer()
+            self.input_buffer = valid_members[-1]
+            if flush:
+                self.compress_member()
+                self.reset_buffer()
 
     def tell(self):
         return self.uncompressed_position
@@ -373,12 +408,33 @@ class IdzipWriter(IOStreamWrapperMixin):
         return self.output.flush()
 
     def close(self):
-        self.sync()
-        self.reset_buffer()
-        if self._should_close:
-            closing = self.output.close()
-            return closing
+        if not self.closed:
+            self.sync()
+            self.reset_buffer()
+            if self._should_close:
+                closing = self.output.close()
+                return closing
         return None
+
+    def _calculate_number_of_chunks_for_bytes(self, in_size):
+        num_chunks = in_size // CHUNK_LENGTH
+        if in_size % CHUNK_LENGTH != 0:
+            num_chunks += 1
+        return num_chunks
+
+    def _calculate_extra_field_length(self, in_size):
+        num_chunks = self._calculate_number_of_chunks_for_bytes(in_size)
+        field_length = 3 * 2 + 2 * num_chunks
+        return field_length
+
+    def _calculate_header_extra_size(self, in_size):
+        field_length = self._calculate_extra_field_length(in_size)
+        extra_length = 2 * 2 + field_length
+        return extra_length
+
+    def _check_member_size_valid(self, in_size):
+        extra_length = self._calculate_header_extra_size(in_size)
+        return extra_length <= 0xffff
 
     def compress_member(self):
         """A gzip member contains:
@@ -388,6 +444,7 @@ class IdzipWriter(IOStreamWrapperMixin):
         self.input_buffer.seek(0, SEEK_END)
         member_size = self.input_buffer.tell()
         self.input_buffer.seek(0)
+
         zlengths_pos = self._prepare_header(member_size)
         zlengths = self._compress_data(member_size)
 
@@ -478,12 +535,14 @@ class IdzipWriter(IOStreamWrapperMixin):
         Idzip does not have that limitation. It starts a new gzip member if needed.
         The new member would be also a valid dictzip file.
         """
-        num_chunks = in_size // CHUNK_LENGTH
-        if in_size % CHUNK_LENGTH != 0:
-            num_chunks += 1
-
-        field_length = 3 * 2 + 2 * num_chunks
-        extra_length = 2 * 2 + field_length
+        # num_chunks = in_size // CHUNK_LENGTH
+        # if in_size % CHUNK_LENGTH != 0:
+        #     num_chunks += 1
+        num_chunks = self._calculate_number_of_chunks_for_bytes(in_size)
+        # field_length = 3 * 2 + 2 * num_chunks
+        field_length = self._calculate_extra_field_length(in_size)
+        # extra_length = 2 * 2 + field_length
+        extra_length = self._calculate_header_extra_size(in_size)
         assert extra_length <= 0xffff
         _write16(self.output, extra_length)  # XLEN
 
