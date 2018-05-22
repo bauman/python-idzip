@@ -1,0 +1,17 @@
+sudo: required
+language: python
+python:
+  - "3.5"
+# command to install dependencies
+before_install:
+  - sudo apt-get -y install dictzip
+install:
+  - pip install nose pytest
+# command to run tests
+before_script:
+  - cd test/data/
+  - chmod +x make_test_data.sh
+  - ./make_test_data.sh
+  - cd ../../
+script:
+  - pytest
