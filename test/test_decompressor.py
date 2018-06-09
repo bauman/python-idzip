@@ -6,7 +6,7 @@ import struct
 from nose.tools import eq_
 
 from idzip import decompressor
-import asserting
+from . import asserting
 
 def test_repr():
     filename = "test/data/medium.txt.dz"
