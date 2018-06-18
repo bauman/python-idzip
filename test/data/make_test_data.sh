@@ -5,6 +5,7 @@ head -c58315 quixote.txt >one_chunk.txt
 head -c116630 quixote.txt >two_chunks.txt
 head -c18011 quixote.txt >small.txt
 head -c134641 quixote.txt >medium.txt
+cat medium.txt medium.txt medium.txt medium.txt medium.txt > large.txt
 rm -f quixote.txt
 
 dictzip -k *.txt
