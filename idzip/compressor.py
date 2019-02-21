@@ -396,6 +396,7 @@ class IdzipWriter(IOStreamWrapperMixin):
                 self.compress_member()
                 self.reset_buffer()
             self.input_buffer = valid_members[-1]
+            self.input_buffer.seek(0, SEEK_END)
             if flush:
                 self.compress_member()
                 self.reset_buffer()
