@@ -131,6 +131,11 @@ class IdzipReader(IOStreamWrapperMixin):
         self._pos += len(line)
         return line
 
+    def flush(self):
+        """No-op, but needed by IdzipFile.flush(), which is called
+        if wrapped in TextIOWrapper."""
+        pass
+
     def close(self):
         if self._should_close:
             self._fileobj.close()
