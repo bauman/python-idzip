@@ -27,7 +27,8 @@ def test_idzip_file_api():
 
     dfd, dzfile = tempfile.mkstemp(suffix='.dz')
     with IdzipFile(dzfile, 'wb') as writer:
-        writer.write(data)
+        n = writer.write(data)
+        assert n == len(data)
 
     assert writer.closed
 
@@ -40,7 +41,8 @@ def test_idzip_file_api():
     gfd, gzfile = tempfile.mkstemp(suffix='.gz')
 
     with gzip.open(gzfile, 'wb') as writer:
-        writer.write(data)
+        n = writer.write(data)
+        assert n == len(data)
 
     with IdzipFile(gzfile, 'rb') as reader:
         decoded = reader.read()
@@ -72,11 +74,32 @@ def test_large_write():
             return
         dzfile = io.BytesIO()
         with IdzipFile(fileobj=dzfile, mode='wb') as writer:
-            writer.write(data)
+            n = writer.write(data)
+            assert n == len(data)
         dzfile.seek(0)
         with IdzipFile(fileobj=dzfile, mode='rb') as reader:
             decoded = reader.read()
         assert decoded == data
+
+def test_bufferedio_compat():
+    data = b''
+    for d in range(1, 1000):
+        try:
+            data = b"a" * ((api.MAX_MEMBER_SIZE + 100) // d)
+            break
+        except MemoryError:
+            continue
+    if data == b'':
+        # no test could be performed
+        return
+    dzfile = io.BytesIO()
+    with io.BufferedWriter(IdzipFile(fileobj=dzfile, mode='wb')) as writer:
+        n = writer.write(data)
+        assert n == len(data)
+    dzfile.seek(0)
+    with io.BufferedReader(IdzipFile(fileobj=dzfile, mode='rb')) as reader:
+        decoded = reader.read()
+    assert decoded == data
 
 
 if __name__ == '__main__':

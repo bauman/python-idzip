@@ -64,7 +64,8 @@ class IdzipFile(object):
 
     def write(self, b):
         self._check_can_write()
-        self._impl.write(b)
+        value = self._impl.write(b)
+        return value
 
     def read(self, size=-1):
         self._check_can_read()
