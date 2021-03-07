@@ -7,7 +7,7 @@ from gzip import GzipFile
 
 
 def open(filename, mode='rb', sync_size=MAX_MEMBER_SIZE):
-    return IdzipFile(filename, mode, sync_size=MAX_MEMBER_SIZE)
+    return IdzipFile(filename, mode, sync_size=sync_size)
 
 
 def compress(data, sync_size=MAX_MEMBER_SIZE):

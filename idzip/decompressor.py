@@ -10,6 +10,7 @@ from idzip._stream import IOStreamWrapperMixin
 
 GZIP_CRC32_LEN = 4
 
+SELECTED_CACHE = caching.OneItemCache
 
 class IdzipReader(IOStreamWrapperMixin):
     def __init__(self, filename=None, fileobj=None):
@@ -32,7 +33,7 @@ class IdzipReader(IOStreamWrapperMixin):
         self._members = []
         self._last_zstream_end = None
         self._chunks = []
-        self._cache = caching.OneItemCache()
+        self._cache = SELECTED_CACHE()
 
         self._read_member_header()
 
@@ -129,6 +130,11 @@ class IdzipReader(IOStreamWrapperMixin):
             line = line[:size]
         self._pos += len(line)
         return line
+
+    def flush(self):
+        """No-op, but needed by IdzipFile.flush(), which is called
+        if wrapped in TextIOWrapper."""
+        pass
 
     def close(self):
         if self._should_close:
