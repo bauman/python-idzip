@@ -237,6 +237,7 @@ class IdzipReader(IOStreamWrapperMixin):
         if new_pos < 0:
             raise ValueError("Invalid pos: %r" % new_pos)
         self._pos = new_pos
+        return new_pos
 
     def __repr__(self):
         return "<idzip %s file %r at %s>" % (
