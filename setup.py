@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from setuptools import setup, find_packages
 
-VERSION = "0.3.7"
+VERSION = "0.3.8"
 
 setup(
     name = "python-idzip",

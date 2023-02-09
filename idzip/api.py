@@ -14,6 +14,7 @@ def compress(data, sync_size=MAX_MEMBER_SIZE):
     out = io.BytesIO()
     writer = IdzipFile(mode='w', fileobj=out, sync_size=sync_size)
     writer.write(data)
+    writer.flush()
     return out.getvalue()
 
 
