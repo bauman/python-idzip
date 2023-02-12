@@ -102,12 +102,13 @@ class IdzipReader(IOStreamWrapperMixin):
         except EOFError:
             # PR#16/18 - support identifying EOF
             #         use a read() as a sync from desired position to actual position
-            #         read(0) can be used aws a
+            #         read(0) can be used as a synchronization call
             dec_eof_position = self._members[-1].start_pos + self._members[-1].isize
             self._pos = dec_eof_position
             if prefixed_buffer:
                 # subtracting the data in the EOF Case so the normal path will add it back
                 # before the function return to avoid changing the path
+                # adding up lengths rather than concatenating here to avoid creating new buffers
                 self._pos -= sum([len(x) for x in prefixed_buffer])
         prefixed_buffer = b"".join(prefixed_buffer)
         result = prefixed_buffer[prefix_size:]
