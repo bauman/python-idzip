@@ -37,7 +37,7 @@ def test_seeking(report_time=False):
     g_pos = g.tell()
     if report_time:
         print(f"idzip END: {f_pos}")
-        print(f"idzip END: {g_pos}")
+        print(f"gzip END:  {g_pos}")
     assert f_pos == g_pos
 
 
