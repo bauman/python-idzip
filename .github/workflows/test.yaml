@@ -32,5 +32,6 @@ jobs:
         python idzip/command.py test/data/large.txt
         cd test
         pytest -l -s -v test_high_level_api.py --cov-report term
+        cd ..
         pytest -l -s -v test_seek_read_behavior.py --cov-report term
 
