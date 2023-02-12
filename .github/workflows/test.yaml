@@ -33,5 +33,5 @@ jobs:
         cd test
         pytest -l -s -v test_high_level_api.py --cov-report term
         cd ..
-        rm -f test/data/large.txt.dz test/data/sample.txt.dz
+        rm test/data/large.txt.dz test/data/sample.txt.dz
 
