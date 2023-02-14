@@ -239,10 +239,8 @@ class IdzipReader(IOStreamWrapperMixin):
         elif whence == os.SEEK_CUR:
             new_pos = self._pos + offset
         elif whence == os.SEEK_END:
-            if offset != 0:
-                raise ValueError("Seek from the end not supported unless offset is set to 0")
             member = self._select_member(inf)
-            new_pos = member.start_pos + member.isize
+            new_pos = member.start_pos + member.isize + offset
         else:
             raise ValueError("Unknown whence: %r" % whence)
 
