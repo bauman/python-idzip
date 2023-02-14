@@ -17,8 +17,8 @@ def test_seeking(report_time=False):
     if report_time:
         print(f"gzip seek time: {g_s_e - g_s_s}")
     # gzip will find the exact EOF position during the seek
-    # idzip can find the exact EOF position during a read call
-    assert g_pos != f_pos
+    # idzip can find the exact EOF position during only if using SEEK_END
+    assert g_pos == f_pos
 
     f_r_s = time()  # file_read_start
     f.read(0)
@@ -30,7 +30,6 @@ def test_seeking(report_time=False):
     g_r_e = time()
     if report_time:
         print(f"gzip read time: {g_r_e - g_r_s}")
-        print(f"seek+read END time comparison: {((f_r_e - f_r_s) / (g_s_e - g_s_s)) * 100}%")
 
     # the file position should now be synchronized
     f_pos = f.tell()

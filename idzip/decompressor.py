@@ -1,6 +1,6 @@
 
 import os
-import sys
+from math import inf
 import struct
 import zlib
 import itertools
@@ -241,7 +241,8 @@ class IdzipReader(IOStreamWrapperMixin):
         elif whence == os.SEEK_END:
             if offset != 0:
                 raise ValueError("Seek from the end not supported unless offset is set to 0")
-            new_pos = sys.maxsize
+            member = self._select_member(inf)
+            new_pos = member.start_pos + member.isize
         else:
             raise ValueError("Unknown whence: %r" % whence)
 
