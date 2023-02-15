@@ -239,14 +239,8 @@ class IdzipReader(IOStreamWrapperMixin):
         elif whence == os.SEEK_CUR:
             new_pos = self._pos + offset
         elif whence == os.SEEK_END:
-            # Parse every member until we find the last one.
-            while True:
-                try:
-                    self._parse_next_member()
-                except EOFError:
-                    break
-            end = self._members[-1].start_pos + self._members[-1].isize
-            new_pos = end + offset
+            member = self._select_member(inf)
+            new_pos = member.start_pos + member.isize + offset
         else:
             raise ValueError("Unknown whence: %r" % whence)
 
