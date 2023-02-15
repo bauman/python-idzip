@@ -1,5 +1,6 @@
 
 import os
+from math import inf
 import struct
 import zlib
 import itertools
@@ -99,8 +100,16 @@ class IdzipReader(IOStreamWrapperMixin):
                     chunk_index += 1
 
         except EOFError:
-            # The read data will be returned.
-            pass
+            # PR#16/18 - support identifying EOF
+            #         use a read() as a sync from desired position to actual position
+            #         read(0) can be used as a synchronization call
+            dec_eof_position = self._members[-1].start_pos + self._members[-1].isize
+            self._pos = dec_eof_position
+            if prefixed_buffer:
+                # subtracting the data in the EOF Case so the normal path will add it back
+                # before the function return to avoid changing the path
+                # adding up lengths rather than concatenating here to avoid creating new buffers
+                self._pos -= sum([len(x) for x in prefixed_buffer]) - prefix_size
         prefixed_buffer = b"".join(prefixed_buffer)
         result = prefixed_buffer[prefix_size:]
         self._pos += len(result)
@@ -230,7 +239,10 @@ class IdzipReader(IOStreamWrapperMixin):
         elif whence == os.SEEK_CUR:
             new_pos = self._pos + offset
         elif whence == os.SEEK_END:
-            raise ValueError("Seek from the end not supported")
+            member = self._select_member(inf)
+            new_pos = member.start_pos + member.isize
+            if offset < 0:         # gzip will not seek past the end of the file
+                new_pos += offset  # idzip must not seek past the end of the file
         else:
             raise ValueError("Unknown whence: %r" % whence)
 
