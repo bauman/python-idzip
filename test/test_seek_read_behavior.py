@@ -3,7 +3,16 @@ import gzip
 import io
 from time import time
 
+
 def test_seeking(report_time=False):
+    # tests that SEEK_END behavior matches gzip
+    # testing a few things
+    # 1. Multi-member (>2GB) works the same as single member
+    # 2. idzip should still be faster than gzip
+    # 3. Seek to end behaves the same, but
+    # 4. Seek to before the end behaves the same
+    # 5. Seek to after the end behaves the same
+
     f = idzip.open("test/data/large.txt.dz")
     g = gzip.open("test/data/large.txt.dz")
     f_s_s = time()  # file_seek_start time
@@ -38,6 +47,38 @@ def test_seeking(report_time=False):
         print(f"idzip END: {f_pos}")
         print(f"gzip END:  {g_pos}")
     assert f_pos == g_pos
+
+    g_pos = g.seek(-50, io.SEEK_END)
+    f_pos = f.seek(-50, io.SEEK_END)
+    assert f_pos == g_pos
+
+    # read past EOF, data should match and position should match
+    g_data = g.read(200)
+    f_data = f.read(200)
+    assert g_data == f_data
+
+    g_pos = g.tell()
+    f_pos = f.tell()
+    assert g_pos == f_pos
+
+    g.seek(-50, io.SEEK_END)
+    f.seek(-50, io.SEEK_END)
+    assert f_pos == g_pos
+
+    _ = g.read()
+    _ = f.read()
+    g_pos = g.tell()
+    f_pos = f.tell()
+    assert g_pos == f_pos
+
+    g_pos = g.seek(50, io.SEEK_END)
+    f_pos = f.seek(50, io.SEEK_END)
+    assert f_pos == g_pos
+    _ = g.read()
+    _ = f.read()
+    g_pos = g.tell()
+    f_pos = f.tell()
+    assert g_pos == f_pos
 
 
 if __name__ == "__main__":

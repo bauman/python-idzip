@@ -109,7 +109,7 @@ class IdzipReader(IOStreamWrapperMixin):
                 # subtracting the data in the EOF Case so the normal path will add it back
                 # before the function return to avoid changing the path
                 # adding up lengths rather than concatenating here to avoid creating new buffers
-                self._pos -= sum([len(x) for x in prefixed_buffer])
+                self._pos -= sum([len(x) for x in prefixed_buffer]) - prefix_size
         prefixed_buffer = b"".join(prefixed_buffer)
         result = prefixed_buffer[prefix_size:]
         self._pos += len(result)
@@ -240,7 +240,9 @@ class IdzipReader(IOStreamWrapperMixin):
             new_pos = self._pos + offset
         elif whence == os.SEEK_END:
             member = self._select_member(inf)
-            new_pos = member.start_pos + member.isize + offset
+            new_pos = member.start_pos + member.isize
+            if offset < 0:         # gzip will not seek past the end of the file
+                new_pos += offset  # idzip must not seek past the end of the file
         else:
             raise ValueError("Unknown whence: %r" % whence)
 
