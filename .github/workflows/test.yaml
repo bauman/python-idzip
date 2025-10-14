@@ -22,7 +22,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools build wheel
         python -m pip install pytest coverage pytest-cov -U
-        pip install -v .
+        python -m build
     - name: Test Testable Components
       run: |
         # All other tests depend upon fixture data not stored with the repository
