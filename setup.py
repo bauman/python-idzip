@@ -25,6 +25,5 @@ setup(
                        'Programming Language :: Python',
                        'Programming Language :: Python :: 2',
                        'Programming Language :: Python :: 3',
-                   ],
-    scripts=['bin/idzip']
+                   ]
 )

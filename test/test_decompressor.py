@@ -3,18 +3,19 @@ from __future__ import with_statement
 
 import os
 import struct
-from nose.tools import eq_
 
 from idzip import decompressor
-from . import asserting
+import asserting
+from asserting import eq_
+
 
 def test_repr():
-    filename = "test/data/medium.txt.dz"
+    filename = "data/medium.txt.dz"
     dzfile = decompressor.IdzipFile(filename)
-    eq_(dzfile.name, filename)
+    assert dzfile.name ==  filename
 
     file_id = hex(id(dzfile))
-    eq_(repr(dzfile), "<idzip open file '%s' at %s>" % (filename, file_id))
+    assert repr(dzfile) == f"<idzip open file '{filename}' at {file_id}>"
 
 
 def test_parse_dictzip_field():
@@ -102,16 +103,16 @@ def create_data_readers():
         ]
     readers = []
     for filename in filenames:
-        expected_input = open("test/data/%s" % filename, "rb")
-        input = decompressor.IdzipFile("test/data/%s.dz" % filename)
+        expected_input = open("data/%s" % filename, "rb")
+        input = decompressor.IdzipFile("data/%s.dz" % filename)
         readers.append(EqReader(expected_input, input))
 
     return readers
 
 
 def _eq_decompress(filename):
-    input = decompressor.IdzipFile("test/data/%s.dz" % filename)
-    asserting.eq_files("test/data/%s" % filename, input)
+    input = decompressor.IdzipFile("data/%s.dz" % filename)
+    asserting.eq_files("data/%s" % filename, input)
 
 
 class EqReader:

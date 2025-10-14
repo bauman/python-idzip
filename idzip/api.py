@@ -1,5 +1,6 @@
 import io
 import errno
+from io import RawIOBase
 
 from idzip.compressor import IdzipWriter, MAX_MEMBER_SIZE
 from idzip.decompressor import IdzipReader
@@ -23,7 +24,7 @@ def decompress(data):
     return IdzipFile(fileobj=in_).read()
 
 
-class IdzipFile(object):
+class IdzipFile(RawIOBase):
     def __init__(self, filename=None, mode="rb", fileobj=None, sync_size=MAX_MEMBER_SIZE, mtime=None):
         self._impl = None
         if 'b' not in mode:

@@ -1,5 +1,7 @@
 
-from nose.tools import eq_
+def eq_(a, b):
+    assert a == b, "%r != %r" % (a, b)
+
 
 def eq_files(expected_input, got_input):
     if isinstance(expected_input, str):

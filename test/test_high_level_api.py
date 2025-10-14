@@ -8,7 +8,7 @@ from os import environ
 from idzip import api
 
 try:
-    range = xrange
+    range = xrange  # wild backward incompatibility hack for super old OS
 except NameError:
     pass
 
