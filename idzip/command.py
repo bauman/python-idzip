@@ -4,37 +4,35 @@ Compresses the given files.
 """
 
 import os
-import sys
-import optparse
+import argparse
 import logging
 
-parent_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, parent_dir)
 import idzip
 from idzip import compressor
 
 DEFAULT_SUFFIX = ".dz"
 
 def _parse_args():
-    parser = optparse.OptionParser(__doc__)
-    parser.add_option("-d", "--decompress", action="store_true",
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument("-d", "--decompress", action="store_true",
             help="decompress the file")
-    parser.add_option("-S", "--suffix",
+    parser.add_argument("-S", "--suffix",
             help="change the default suffix (default=%s)" % DEFAULT_SUFFIX)
-    parser.add_option("-k", "--keep", action="store_true",
+    parser.add_argument("-k", "--keep", action="store_true",
             help="don't unlink the processed files")
-    parser.add_option("-v", "--verbose", action="count",
+    parser.add_argument("-v", "--verbose", action="count",
             help="increase verbosity")
+    parser.add_argument('files', nargs='+', help='the files to compress')
     parser.set_defaults(verbose=0, suffix=DEFAULT_SUFFIX, keep=False)
 
-    options, args = parser.parse_args()
-    if not options.suffix or "/" in options.suffix:
-        parser.error("Incorrect suffix: %r" % options.suffix)
+    args = parser.parse_args()
+    if not args.suffix or "/" in args.suffix:
+        parser.error("Incorrect suffix: %r" % args.suffix)
 
-    if len(args) == 0:
+    if len(args.files) == 0:
         parser.error("An input file is required.")
 
-    return options, args
+    return args
 
 
 def _compress(filename, options):
@@ -89,16 +87,16 @@ def _finish_output(output, options):
 
 
 def main():
-    options, args = _parse_args()
-    logging.basicConfig(level=logging.WARNING - 10*options.verbose)
+    args = _parse_args()
+    logging.basicConfig(level=logging.WARNING - 10*args.verbose)
 
     action = _compress
-    if options.decompress:
+    if args.decompress:
         action = _decompress
 
-    for filename in args:
-        ok = action(filename, options)
-        if ok and not options.keep:
+    for filename in args.files:
+        ok = action(filename, args)
+        if ok and not args.keep:
             os.unlink(filename)
 
 
