@@ -7,7 +7,7 @@ import os
 from io import BytesIO
 
 from idzip import compressor
-from . import asserting
+import asserting
 
 def test_reserved():
     eq_(compressor.FRESERVED, int("11100000", 2))

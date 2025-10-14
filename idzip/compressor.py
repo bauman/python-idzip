@@ -21,7 +21,7 @@ from os import path, SEEK_END, SEEK_SET
 from ._stream import IOStreamWrapperMixin, check_file_like_for_writing
 
 try:
-    basestring
+    basestring  # wild backward incompatibility hack for super old OS
 except NameError:
     basestring = (bytes, str)
 

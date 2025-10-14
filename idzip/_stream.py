@@ -1,6 +1,6 @@
+from io import RawIOBase
 
-
-class IOStreamWrapperMixin(object):
+class IOStreamWrapperMixin(RawIOBase):
 
     @property
     def closed(self):

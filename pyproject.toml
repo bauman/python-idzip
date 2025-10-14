@@ -1,0 +1,26 @@
+[project]
+name = "python-idzip"
+authors = [
+    {name = "Rik Faith", email = "john.doe@example.com"},
+]
+maintainers = [
+    {name = "Dan Bauman", email = "dan@bauman.space"},
+]
+version = "0.3.10"
+description = "DictZip - Random Access gzip files"
+readme = "README.md"
+license = {text = 'MIT'}
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+idzip = "idzip.command:main"
+
+[project.urls]
+Homepage = "https://github.com/bauman/python-idzip"
+Repository = "https://github.com/bauman/python-idzip"
+Issues = "https://github.com/bauman/python-idzip/issues"
+
+[build-system]
+requires = ["setuptools>=58"]
+build-backend = "setuptools.build_meta"
