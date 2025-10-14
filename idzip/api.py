@@ -1,5 +1,6 @@
 import io
 import errno
+from typing import BinaryIO
 from io import RawIOBase
 
 from idzip.compressor import IdzipWriter, MAX_MEMBER_SIZE
@@ -7,11 +8,11 @@ from idzip.decompressor import IdzipReader
 from gzip import GzipFile
 
 
-def open(filename, mode='rb', sync_size=MAX_MEMBER_SIZE):
+def open(filename: str, mode: str='rb', sync_size: int=MAX_MEMBER_SIZE):
     return IdzipFile(filename, mode, sync_size=sync_size)
 
 
-def compress(data, sync_size=MAX_MEMBER_SIZE):
+def compress(data: bytes, sync_size: int = MAX_MEMBER_SIZE):
     out = io.BytesIO()
     writer = IdzipFile(mode='w', fileobj=out, sync_size=sync_size)
     writer.write(data)
@@ -19,13 +20,15 @@ def compress(data, sync_size=MAX_MEMBER_SIZE):
     return out.getvalue()
 
 
-def decompress(data):
+def decompress(data: bytes):
     in_ = io.BytesIO(data)
     return IdzipFile(fileobj=in_).read()
 
 
 class IdzipFile(RawIOBase):
-    def __init__(self, filename=None, mode="rb", fileobj=None, sync_size=MAX_MEMBER_SIZE, mtime=None):
+    def __init__(self, filename: str = None, mode: str = "rb",
+                 fileobj: BinaryIO=None,
+                 sync_size: int=MAX_MEMBER_SIZE, mtime: int=None):
         self._impl = None
         if 'b' not in mode:
             mode += 'b'
@@ -45,17 +48,17 @@ class IdzipFile(RawIOBase):
             raise IOError("Unsupported mode %r" % mode)
         self.mode = mode
 
-    def _make_reader(self, filename, mode, fileobj):
+    def _make_reader(self, filename: str, mode: str, fileobj: BinaryIO) -> IdzipReader:
         return IdzipReader(filename, fileobj=fileobj)
 
-    def _fallback_to_gzip(self, filename, mode, fileobj):
+    def _fallback_to_gzip(self, filename: str, mode: str, fileobj: BinaryIO) -> GzipFile:
         return GzipFile(filename, mode=mode, fileobj=fileobj)
 
-    def _make_writer(self, filespec, sync_size, mtime):
+    def _make_writer(self, filespec, sync_size: int, mtime: int) -> IdzipWriter:
         return IdzipWriter(filespec, sync_size=sync_size, mtime=mtime)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._impl.name
 
     def close(self):
@@ -69,11 +72,11 @@ class IdzipFile(RawIOBase):
         value = self._impl.write(b)
         return value
 
-    def read(self, size=-1):
+    def read(self, size: int=-1) -> bytes:
         self._check_can_read()
         return self._impl.read(size)
 
-    def tell(self):
+    def tell(self) -> int:
         return self._impl.tell()
 
     def _check_can_read(self):
@@ -88,20 +91,20 @@ class IdzipFile(RawIOBase):
         if self.closed:
             raise OSError(errno.EBADF, "Cannot write to a closed file")
 
-    def readable(self):
+    def readable(self) -> bool:
         return self._impl.readable()
 
-    def writable(self):
+    def writable(self) -> bool:
         return self._impl.writable()
 
     @property
     def closed(self):
         return self._impl.closed
 
-    def seekable(self):
+    def seekable(self) -> bool:
         return self._impl.seekable()
 
-    def seek(self, offset, whence=io.SEEK_SET):
+    def seek(self, offset: int, whence: int = io.SEEK_SET):
         return self._impl.seek(offset, whence)
 
     def __enter__(self):
@@ -110,7 +113,7 @@ class IdzipFile(RawIOBase):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def readline(self, size=-1):
+    def readline(self, size=-1) -> bytes:
         self._check_can_read()
         return self._impl.readline()
 
@@ -120,7 +123,7 @@ class IdzipFile(RawIOBase):
             yield line
             line = self.readline()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<idzip %s file %r at %s>" % (
             "open" if not self.closed else "closed",
             self.name,

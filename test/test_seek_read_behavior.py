@@ -30,12 +30,12 @@ def test_seeking(report_time=False):
     assert g_pos == f_pos
 
     f_r_s = time()  # file_read_start
-    f.read(0)
+    _ = f.read(0)
     f_r_e = time()  # file_read_end
     if report_time:
         print(f"idzip read time: {f_r_e - f_r_s}")
     g_r_s = time()
-    g.read(0)
+    _ = g.read(0)
     g_r_e = time()
     if report_time:
         print(f"gzip read time: {g_r_e - g_r_s}")
